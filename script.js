@@ -64,6 +64,8 @@ function getStoredCart() {
 let products = [];
 let cart = [];
 let currentCategory = "all";
+let currentSearch = "";
+let selectedProductId = null;
 
 
 const productsGrid = document.querySelector('#productsGrid');
@@ -71,6 +73,18 @@ const searchInput = document.querySelector('#searchInput');
 const searchBtn = document.querySelector('#searchBtn');
 const cartContainer = document.querySelector('#cartItems');
 const checkoutForm = document.querySelector('#checkoutForm');
+const categoryFilters = document.querySelector('#categoryFilters');
+const noProducts = document.querySelector('#noProducts');
+const cartItemsCount = document.querySelector('#cartItemsCount');
+const totalPriceEl = document.querySelector('#totalPrice');
+const modalElement = document.querySelector('.modal');
+const modalProductImage = document.querySelector('#modalProductImage');
+const modalProductCategory = document.querySelector('#modalProductCategory');
+const modalProductTitle = document.querySelector('#modalProductTitle');
+const modalProductDescription = document.querySelector('#modalProductDescription');
+const modalProductPrice = document.querySelector('#modalProductPrice');
+const modalAddToCartBtn = document.querySelector('#modalAddToCart');
+let productModal = null;
 // ========== Ініціалізація при завантаженні сторінки ==========
 document.addEventListener('DOMContentLoaded', function () {
    setupGsapAnimations();
@@ -78,16 +92,64 @@ document.addEventListener('DOMContentLoaded', function () {
    fetchProducts(); // Отримуємо товари з JSON
 
 
+   if (modalElement && typeof bootstrap !== 'undefined') {
+       productModal = new bootstrap.Modal(modalElement);
+   }
+
+
+   productsGrid?.addEventListener('click', function (e) {
+       const button = e.target.closest('.add-to-cart-btn');
+       if (button) {
+           e.stopPropagation();
+           return;
+       }
+
+
+       const card = e.target.closest('.card');
+       if (!card) return;
+
+
+       const productId = Number(card.dataset.productId);
+       if (productId) {
+           openProductModal(productId);
+       }
+   });
+
+
+   modalAddToCartBtn?.addEventListener('click', function () {
+       if (!selectedProductId) return;
+       addToCart(selectedProductId);
+       productModal?.hide();
+   });
+
+
    searchInput?.addEventListener('input', function () {
-       const text = searchInput.value.toLowerCase(); // Що ввів юзер
+       currentSearch = searchInput.value.trim().toLowerCase();
+       renderProducts();
+   });
 
 
-       // Фільтруємо
-       const filtered = products.filter(product => product.title.toLowerCase().includes(text));
+   searchBtn?.addEventListener('click', function (e) {
+       e.preventDefault();
+       currentSearch = searchInput?.value.trim().toLowerCase() || '';
+       renderProducts();
+   });
 
 
-       // Перемальовуємо сторінку новими даними!
-       displayProducts(filtered);
+   categoryFilters?.addEventListener('click', function (e) {
+       const activeButton = e.target.closest('.category-btn');
+       if (!activeButton) return;
+
+
+       currentCategory = activeButton.dataset.category || 'all';
+       document.querySelectorAll('.category-btn').forEach(btn => {
+           btn.classList.toggle('active', btn === activeButton);
+           btn.classList.toggle('btn-dark', btn === activeButton);
+           btn.classList.toggle('btn-outline-dark', btn !== activeButton);
+       });
+
+
+       renderProducts();
    });
 
 
@@ -186,16 +248,63 @@ async function fetchProducts() {
    const response = await fetch('store_db.json');
    const data = await response.json();
    products = data; // глобальна змінна з усіма товарами
-   if (productsGrid) {
-       displayProducts(data);
-   }
+   renderCategoryFilters();
+   renderProducts();
 }
+
+
+function renderCategoryFilters() {
+   if (!categoryFilters) return;
+
+
+   const categories = [...new Set(products.map(product => product.category).filter(Boolean))].sort();
+   const buttons = [
+       `<button class="btn btn-dark category-btn ${currentCategory === 'all' ? 'active' : ''}" data-category="all">All products</button>`
+   ];
+
+
+   categories.forEach(category => {
+       buttons.push(`<button class="btn btn-outline-dark category-btn ${currentCategory === category ? 'active' : ''}" data-category="${category}">${category}</button>`);
+   });
+
+
+   categoryFilters.innerHTML = buttons.join('');
+}
+
+
+function renderProducts() {
+   const filteredProducts = products.filter(product => {
+       const matchesCategory = currentCategory === 'all' || product.category?.toLowerCase() === currentCategory.toLowerCase();
+       const searchText = currentSearch.trim().toLowerCase();
+       const matchesSearch = !searchText || [product.title, product.category, product.description]
+           .filter(Boolean)
+           .some(value => value.toLowerCase().includes(searchText));
+
+
+       return matchesCategory && matchesSearch;
+   });
+
+
+   displayProducts(filteredProducts);
+}
+
+
 // ========== Відображення товарів ==========
-function displayProducts(products) {
+function displayProducts(productsToRender) {
+   if (!productsGrid) return;
+
+
    productsGrid.innerHTML = ''; // Очищаємо блок товарів
 
 
-   products?.forEach(product => {
+   if (!productsToRender?.length) {
+       noProducts?.classList.remove('d-none');
+       return;
+   }
+
+
+   noProducts?.classList.add('d-none');
+   productsToRender.forEach(product => {
        const card = createProductCard(product);
        productsGrid.innerHTML += card;
    });
@@ -205,14 +314,32 @@ function displayProducts(products) {
 }
 // ========== Створення картки товару ==========
 function createProductCard(product) {
-   return `<div class="card" style="width: 18rem;">
-       <img src="img/${product.image}" class="card-img-top" alt="${product.title}">
-       <div class="card-body">
+   return `<div class="card h-100 d-flex flex-column" style="width: 18rem; cursor: pointer;" data-product-id="${product.id}" role="button">
+       <img src="img/${product.image}" class="card-img-top" alt="${product.title}" style="height: 220px; object-fit: cover;">
+       <div class="card-body d-flex flex-column">
            <h5 class="card-title">${product.title}</h5>
-           <p class="card-text text-primary fw-bold">${product.price} $ </p>
-           <button onclick="addToCart(${product.id})"  class="btn btn-warning add-to-cart-btn"> <i class="bi bi-cart-plus"></i> Add to cart</button>
+           <p class="card-text text-muted mb-2">${product.category || 'No category'}</p>
+           <p class="card-text text-primary fw-bold mb-3">${product.price} $ </p>
+           <button type="button" onclick="event.stopPropagation(); addToCart(${product.id})" class="btn btn-warning add-to-cart-btn mt-auto"> <i class="bi bi-cart-plus"></i> Add to cart</button>
        </div>
    </div>`;
+}
+
+
+function openProductModal(productId) {
+   const product = products.find(item => item.id === productId);
+   if (!product) return;
+
+
+   selectedProductId = product.id;
+   modalProductImage.src = `img/${product.image}`;
+   modalProductCategory.textContent = product.category || 'No category';
+   modalProductTitle.textContent = product.title;
+   modalProductDescription.textContent = product.description || 'No description available.';
+   modalProductPrice.textContent = `${product.price} $`;
+
+
+   productModal?.show();
 }
 // Додавання товару до кошика
 function addToCart(productId) {
@@ -227,14 +354,40 @@ function addToCart(productId) {
        cart.push({ ...product, quantity: 1 }); // Додаємо новий товар до кошика
    }
    saveJsonCookie('cart', cart, 3600 * 24 * 7); // Зберігаємо кошик у Cookie та LocalStorage
+   displayCart();
+}
+
+
+function removeFromCart(productId) {
+   cart = cart.filter(item => item.id !== productId);
+   saveJsonCookie('cart', cart, 3600 * 24 * 7);
+   displayCart();
+}
+
+
+function changeQuantity(productId, delta) {
+   const item = cart.find(product => product.id === productId);
+   if (!item) return;
+
+
+   item.quantity += delta;
+
+
+   if (item.quantity <= 0) {
+       cart = cart.filter(product => product.id !== productId);
+   }
+
+
+   saveJsonCookie('cart', cart, 3600 * 24 * 7);
+   displayCart();
 }
 // Завантаження кошика з Cookie або LocalStorage
 function loadCart() {
    const savedCart = getStoredCart();
    if (savedCart.length > 0) {
        cart = savedCart;
-       displayCart(); // Відображаємо кошик після завантаження
    }
+   displayCart(); // Відображаємо кошик після завантаження
 }
 function displayCart() {
    if (!cartContainer) return; // Якщо елемент для відображення кошика не знайдено, зупиняємо функцію
@@ -242,10 +395,18 @@ function displayCart() {
 
    // Очищаємо контейнер перед виведенням
    cartContainer.innerHTML = '';
+   if (cartItemsCount) {
+       cartItemsCount.textContent = cart.reduce((sum, item) => sum + item.quantity, 0);
+   }
+
+
    if (cart.length === 0) {
        cartContainer.innerHTML = '<p class="m-3">Your cart is empty 🛒</p>';
+       if (totalPriceEl) totalPriceEl.textContent = '0 $';
        return; // Зупиняємо функцію, далі йти не треба
    }
+
+
    let total = 0;
    cart.forEach((product) => {
        total += product.price * product.quantity; // Підрахунок загальної суми
@@ -257,14 +418,19 @@ function displayCart() {
          <img src="img/${product.image}" height="80" >
          <div class="flex-grow-1">
              <h5 class="card-title mb-1">${product.title}</h5>
-             <p class="card-text text-muted mb-1">Quantity: ${product.quantity}</p>
+             <div class="d-flex align-items-center gap-2 mb-2">
+                 <button onclick="changeQuantity(${product.id}, -1)" class="btn btn-outline-secondary btn-sm">-</button>
+                 <span class="fw-bold">${product.quantity}</span>
+                 <button onclick="changeQuantity(${product.id}, 1)" class="btn btn-outline-secondary btn-sm">+</button>
+             </div>
              <p class="card-text text-primary fw-bold mb-0">Price: ${product.price} $</p>
          </div>
+         <button onclick="removeFromCart(${product.id})" class="btn btn-outline-danger btn-sm">Delete</button>
        </div>
      </div>
    `;
    });
-   document.querySelector('#totalPrice').textContent = `${total} $`; // Виводимо загальну суму
+   if (totalPriceEl) totalPriceEl.textContent = `${total} $`; // Виводимо загальну суму
 
 
 }
