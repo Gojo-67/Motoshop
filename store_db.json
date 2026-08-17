@@ -5,7 +5,7 @@
        "price": 5643,
        "image": "2023 300–350cc Four-Stroke Motocross.png",
        "category": "Motocross Motorcycles",
-       "description": "A motocross bike with a powerful four-stroke engine, reliable suspension, and a comfortable riding position for long sessions."
+       "description": "A professional motocross bike with high power, precise handling, and modern electronics for challenging tracks."
    },
    {
        "id": 2,
@@ -21,7 +21,7 @@
        "price": 5437,
        "image": "Kwasaki KX327 2stroke.png",
        "category": "Motocross Motorcycles",
-       "description": "Original spare parts for motocross bikes, including pistons, gasket kits, and other repair components."
+       "description": "A professional motocross bike with high power, precise handling, and modern electronics for challenging tracks."
    },
    {
        "id": 4,
@@ -55,7 +55,7 @@
        "price": 46,
        "image": "motocross boots.jpg",
        "category": "Gear",
-       "description": " Motocross boots"
+       "description": " motocross boots for riders, providing protection and support for off-road riding."
    }
    ,
    {
@@ -64,7 +64,7 @@
        "price": 125,
        "image": "healmet redbull motocross.jpg",
        "category": "Gear",
-       "description": "A complete motocross gear set featuring a helmet, protection, gloves, and a race suit for safe riding."
+       "description": "Helmet Red Bull Motocross"
    }
    ,
    {
@@ -73,6 +73,24 @@
        "price": 26,
        "image": "spark-plug-silmar9a9s-iridium.jpg",
        "category": "Parts",
-       "description": "A complete motocross gear set featuring a helmet, protection, gloves, and a race suit for safe riding."
+       "description": "plugs for motocross bikes, including pistons, gasket kits, and other repair components."
+   }
+   ,
+   {
+       "id": 10,
+       "title": "Alpinestars Racer Riway White Black Kit Combo.",
+       "price": 127,
+       "image": "Screenshot 2026-08-17 165530.png",
+       "category": "Gear",
+       "description": "Alpinestars Racer Riway White Black Kit Combo."
+   }
+   ,
+   {
+       "id": 11,
+       "title": "Alpinestars Racer Riway White Black Kit Combo.",
+       "price": 345,
+       "image": "Screenshot 2026-08-17 170447.png",
+       "category": "Parts",
+       "description": "KTM 2-Stroke FMF Fatty Gold Exhaust"
    }
 ]
